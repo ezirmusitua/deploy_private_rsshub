@@ -1,19 +1,16 @@
 #!/bin/bash
 
+REMOTE=$1
+APP=${2:-"/root/rsshub"}
+if [[ $REMOTE = "" ]]; then
+echo "缺少服务器地址"
+exit -1
+fi
+
 # 获取最新的 compose 文件
 # wget https://raw.githubusercontent.com/DIYgod/RSSHub/master/docker-compose.yml
 
-# 初始化 volume
-docker volume ls | grep -o "rss"
-if [ ! -z $_ ]; then 
-docker volume create rss_redis-data
-fi
-
-# 更新官方镜像
-docker pull diygod/rsshub
-# 停止运行中的容器
-docker ps -a | grep -o "rsshub"
-if [ !-z $_ ]; then
-docker-compose down
-fi
-docker-compose up -d
+echo "RSSHub 部署材料将被保存到 $REMOTE:$APP 下"
+ssh -t $REMOTE "mkdir $APP"
+rsync . $REMOTE:$APP/
+ssh -t $REMOTE < .script/start.sh

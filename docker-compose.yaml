@@ -8,17 +8,17 @@ services:
             - "1200:1200"
         environment:
             ACCESS_KEY: "your-secret-key"
-            NODE_ENV: production
-            LISTEN_INADDR_ANY: 0
-            CACHE_TYPE: redis
+            NODE_ENV: "production"
+            LISTEN_INADDR_ANY: "0" # 是否禁止公网访问，如果不打算使用 nginx 进行反向代理则应设置为 "1"
+            CACHE_TYPE: "redis"
             REDIS_URL: "redis://redis:6379/"
             PUPPETEER_WS_ENDPOINT: "ws://browserless:3000"
-            PROXY_URI: "http://proxy:7890"
-            PROXY_URL_REGEX: "https?:\\/\\/(.*)(v2ex|twitter|youtube)(.*)\\.(.*)"
-            REAUEST_TIMEOUT: 3600000
+            PROXY_URI: "http://proxy:7890" # 代理，若不使用代理则去掉代理相关配置
+            PROXY_URL_REGEX: "https?:\\/\\/(.*)(v2ex|twitter|youtube)(.*)\\.(.*)" # 在使用 browserless 的情况下尽量按需设置需要代理的网站 url
+            REQUEST_TIMEOUT: 3600000
 
         depends_on:
-            - proxy
+            - proxy # 不需要部署 proxy 服务则移除该行
             - browserless
             - redis
 
@@ -28,14 +28,15 @@ services:
         environment:
             DEFAULT_BLOCK_ADS: "true"
             DEFAULT_IGNORE_HTTPS_ERRORS: "true"
-            DEFAULT_LAUNCH_ARGS: '["--window-size=375,820","--proxy-server=http://proxy:7890"]'
+            # 启动 chrome 实例时的默认参数，若不使用代理则去掉 `--proxy-server` 
+            DEFAULT_LAUNCH_ARGS: '["--window-size=375,820","--proxy-server=http://proxy:7890"]' 
             CONNECTION_TIMEOUT: "600000"
         ulimits:
             core:
                 hard: 0
                 soft: 0
         depends_on:
-            - proxy
+            - proxy # 不需要部署 proxy 服务则移除该行
 
     redis:
         image: redis:alpine
@@ -43,12 +44,14 @@ services:
         volumes:
             - redis-data:/data
 
+    # 按需添加，不需要则去掉 proxy 相关配置
     proxy:
         image: dreamacro/clash
         restart: always
         ports:
             - "7890:7890"
         volumes:
+            # 使用自己的 proxy 配置文件并放置到 `.artifacts` 目录下
             - ./.artifacts/proxy.yaml:/root/.config/clash/config.yaml
 
 volumes:
