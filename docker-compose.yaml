@@ -1,0 +1,55 @@
+version: "3"
+
+services:
+    rsshub:
+        image: rsshub
+        restart: always
+        ports:
+            - "1200:1200"
+        environment:
+            ACCESS_KEY: "your-secret-key"
+            NODE_ENV: production
+            LISTEN_INADDR_ANY: 0
+            CACHE_TYPE: redis
+            REDIS_URL: "redis://redis:6379/"
+            PUPPETEER_WS_ENDPOINT: "ws://browserless:3000"
+            PROXY_URI: "http://proxy:7890"
+            PROXY_URL_REGEX: "https?:\\/\\/(.*)(v2ex|twitter|youtube)(.*)\\.(.*)"
+            REAUEST_TIMEOUT: 3600000
+
+        depends_on:
+            - proxy
+            - browserless
+            - redis
+
+    browserless:
+        image: browserless/chrome
+        restart: always
+        environment:
+            DEFAULT_BLOCK_ADS: "true"
+            DEFAULT_IGNORE_HTTPS_ERRORS: "true"
+            DEFAULT_LAUNCH_ARGS: '["--window-size=375,820","--proxy-server=http://proxy:7890"]'
+            CONNECTION_TIMEOUT: "600000"
+        ulimits:
+            core:
+                hard: 0
+                soft: 0
+        depends_on:
+            - proxy
+
+    redis:
+        image: redis:alpine
+        restart: always
+        volumes:
+            - redis-data:/data
+
+    proxy:
+        image: dreamacro/clash
+        restart: always
+        ports:
+            - "7890:7890"
+        volumes:
+            - ./.artifacts/proxy.yaml:/root/.config/clash/config.yaml
+
+volumes:
+    redis-data:
